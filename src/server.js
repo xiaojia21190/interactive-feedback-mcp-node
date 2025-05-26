@@ -134,6 +134,32 @@ class InteractiveFeedbackMCP {
     if (name === "interactive_feedback") {
       try {
         const result = await this.interactiveFeedback(args.message, args.predefined_options);
+
+        // 格式化反馈结果，支持 Markdown
+        let formattedResponse = "";
+
+        if (result.interactive_feedback) {
+          formattedResponse = `## 📝 用户反馈\n\n${result.interactive_feedback}`;
+        } else {
+          formattedResponse = "用户已确认，无额外反馈。";
+        }
+
+        // 添加时间戳和额外信息
+        if (result.timestamp) {
+          const timeStr = new Date(result.timestamp).toLocaleString("zh-CN");
+          formattedResponse += `\n\n---\n*反馈时间: ${timeStr}*`;
+        }
+
+        // 如果有选中的选项，单独展示
+        if (result.selected_options && result.selected_options.length > 0) {
+          formattedResponse += `\n\n**选中选项:** ${result.selected_options.join(", ")}`;
+        }
+
+        // 如果是 Cursor 优化版本，添加标识
+        if (result.cursor_optimized) {
+          formattedResponse += `\n\n> ✨ 通过 Cursor 优化界面提交`;
+        }
+
         return {
           jsonrpc: "2.0",
           id: request.id,
@@ -141,12 +167,21 @@ class InteractiveFeedbackMCP {
             content: [
               {
                 type: "text",
-                text: result.interactive_feedback,
+                text: formattedResponse,
               },
             ],
+            isError: false,
+            metadata: {
+              source: "interactive_feedback",
+              ui_type: result.ui_type || "unknown",
+              has_user_input: !!(result.text_feedback || (result.selected_options && result.selected_options.length > 0)),
+              timestamp: result.timestamp,
+            },
           },
         };
       } catch (error) {
+        process.stderr.write(`Interactive feedback error: ${error.message}\n`);
+
         return {
           jsonrpc: "2.0",
           id: request.id,
@@ -154,10 +189,15 @@ class InteractiveFeedbackMCP {
             content: [
               {
                 type: "text",
-                text: `Error: ${error.message}`,
+                text: `## ❌ 反馈收集失败\n\n**错误信息:** ${error.message}\n\n**建议:** 请检查 MCP 服务配置或查看故障排除文档。`,
               },
             ],
             isError: true,
+            metadata: {
+              source: "interactive_feedback",
+              error: error.message,
+              timestamp: new Date().toISOString(),
+            },
           },
         };
       }
@@ -174,33 +214,53 @@ class InteractiveFeedbackMCP {
   async interactiveFeedback(message, predefinedOptions) {
     const tempFile = path.join(os.tmpdir(), `feedback-${Date.now()}.json`);
 
-    // 尝试使用Electron UI，如果失败则使用模拟UI
+    // 使用Electron UI
     const electronUiPath = path.join(__dirname, "feedback_ui.js");
-    const mockUiPath = path.join(__dirname, "mock_ui.js");
 
-    // 检查是否有Electron可用，但允许通过环境变量强制使用Mock UI
+    // 检查Electron是否可用
     const hasElectron = fs.existsSync(path.join(__dirname, "..", "node_modules", "electron"));
-    const useElectron = hasElectron && !process.env.FORCE_MOCK_UI;
+
+    if (!hasElectron) {
+      throw new Error("Electron not found. Please install electron: npm install electron");
+    }
+
+    // 增强调试信息
+    if (process.env.DEBUG === "true") {
+      process.stderr.write(`=== 调试信息 ===\n`);
+      process.stderr.write(`临时文件路径: ${tempFile}\n`);
+      process.stderr.write(`Electron 可用: ${hasElectron}\n`);
+      process.stderr.write(`消息内容: ${message}\n`);
+      process.stderr.write(`预定义选项: ${predefinedOptions ? predefinedOptions.join(", ") : "无"}\n`);
+      process.stderr.write(`===============\n`);
+    }
 
     let execPath, args;
-    if (useElectron) {
-      // Use Electron executable for Electron UI
-      try {
-        const electronPath = require("electron");
-        execPath = electronPath;
-      } catch (err) {
-        // Fallback to manual path if require fails
-        execPath = path.join(__dirname, "..", "node_modules", "electron", "dist", "electron.exe");
+
+    // Use Electron executable for Electron UI
+    try {
+      const electronPath = require("electron");
+      execPath = electronPath;
+      if (process.env.DEBUG === "true") {
+        process.stderr.write(`Electron 路径: ${execPath}\n`);
       }
-      args = [electronUiPath, "--prompt", message, "--output-file", tempFile, ...(predefinedOptions ? ["--predefined-options", predefinedOptions.join("|||")] : [])];
-    } else {
-      // Use Node.js for mock UI
-      execPath = process.execPath;
-      args = [mockUiPath, "--prompt", message, "--output-file", tempFile, ...(predefinedOptions ? ["--predefined-options", predefinedOptions.join("|||")] : [])];
+    } catch (err) {
+      // Fallback to manual path if require fails
+      execPath = path.join(__dirname, "..", "node_modules", "electron", "dist", "electron.exe");
+      if (process.env.DEBUG === "true") {
+        process.stderr.write(`Electron require 失败，使用回退路径: ${execPath}\n`);
+        process.stderr.write(`错误信息: ${err.message}\n`);
+      }
+    }
+
+    args = [electronUiPath, "--prompt", message, "--output-file", tempFile, ...(predefinedOptions ? ["--predefined-options", predefinedOptions.join("|||")] : [])];
+
+    // 显示完整的启动命令用于调试
+    if (process.env.DEBUG === "true") {
+      process.stderr.write(`完整启动命令: ${execPath} ${args.join(" ")}\n`);
     }
 
     return new Promise((resolve, reject) => {
-      process.stderr.write(`Launching ${useElectron ? "Electron" : "Mock"} UI with args: ${JSON.stringify(args)}\n`);
+      process.stderr.write(`Launching Electron UI with args: ${JSON.stringify(args)}\n`);
 
       const child = spawn(execPath, args, {
         stdio: ["ignore", "pipe", "pipe"],
@@ -220,6 +280,7 @@ class InteractiveFeedbackMCP {
 
       child.on("error", (err) => {
         process.stderr.write(`Child process error: ${err.message}\n`);
+        process.stderr.write(`错误详情: ${JSON.stringify(err, null, 2)}\n`);
         reject(new Error(`Failed to launch feedback UI: ${err.message}`));
       });
 
@@ -227,6 +288,16 @@ class InteractiveFeedbackMCP {
         process.stderr.write(`Child process exited with code ${code}, signal ${signal}\n`);
 
         if (code !== 0) {
+          process.stderr.write(`=== 错误诊断信息 ===\n`);
+          process.stderr.write(`退出代码: ${code}\n`);
+          process.stderr.write(`信号: ${signal}\n`);
+          process.stderr.write(`使用的执行路径: ${execPath}\n`);
+          process.stderr.write(`传递的参数: ${JSON.stringify(args)}\n`);
+          process.stderr.write(`工作目录: ${process.cwd()}\n`);
+          process.stderr.write(`临时文件路径: ${tempFile}\n`);
+          process.stderr.write(`临时文件是否存在: ${fs.existsSync(tempFile)}\n`);
+          process.stderr.write(`====================\n`);
+
           reject(new Error(`Feedback UI exited with code ${code}`));
           return;
         }
@@ -235,11 +306,16 @@ class InteractiveFeedbackMCP {
           if (fs.existsSync(tempFile)) {
             const result = JSON.parse(fs.readFileSync(tempFile, "utf8"));
             fs.unlinkSync(tempFile);
+            if (process.env.DEBUG === "true") {
+              process.stderr.write(`成功读取结果: ${JSON.stringify(result, null, 2)}\n`);
+            }
             resolve(result);
           } else {
+            process.stderr.write(`临时文件不存在: ${tempFile}\n`);
             reject(new Error("Feedback result file not found"));
           }
         } catch (err) {
+          process.stderr.write(`读取反馈结果失败: ${err.message}\n`);
           reject(new Error(`Failed to read feedback result: ${err.message}`));
         }
       });
@@ -247,6 +323,7 @@ class InteractiveFeedbackMCP {
       // 设置超时
       setTimeout(() => {
         if (!child.killed) {
+          process.stderr.write(`UI 进程超时，强制终止...\n`);
           child.kill();
           reject(new Error("Feedback UI timeout"));
         }

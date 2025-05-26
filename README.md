@@ -1,51 +1,43 @@
-# 🗣️ Interactive Feedback MCP (Node.js Version)
+# 🎯 Cursor 专用配置指南
 
-Simple [MCP Server](https://modelcontextprotocol.io/) to enable a human-in-the-loop workflow in AI-assisted development tools like [Cursor](https://www.cursor.com), [Cline](https://cline.bot), and [Windsurf](https://windsurf.com). This server allows you to easily provide feedback directly to the AI agent, bridging the gap between AI and you.
+本指南专门为 Cursor IDE 用户提供 Interactive Feedback MCP 服务的完整配置和使用说明。
 
-**Note:** This server is designed to run locally alongside the MCP client (e.g., Claude Desktop, VS Code), as it needs direct access to the user's operating system to display notifications.
+## 🚀 快速开始
 
-## 🖼️ Example
+### 1. 下载和安装
 
-![Interactive Feedback Example](https://raw.githubusercontent.com/poliva/interactive-feedback-mcp/refs/heads/main/.github/example.png)
+```bash
+# 克隆项目到本地
+git clone https://github.com/xiaojia21190/interactive-feedback-mcp-node.git
+cd interactive-feedback-mcp-node
 
-## 💡 Why Use This?
+# 安装依赖
+npm install
+```
 
-In environments like Cursor, every prompt you send to the LLM is treated as a distinct request — and each one counts against your monthly limit (e.g., 500 premium requests). This becomes inefficient when you're iterating on vague instructions or correcting misunderstood output, as each follow-up clarification triggers a full new request.
+### 2. 配置 Cursor
 
-This MCP server introduces a workaround: it allows the model to pause and request clarification before finalizing the response. Instead of completing the request, the model triggers a tool call (`interactive_feedback`) that opens an interactive feedback window. You can then provide more detail or ask for changes — and the model continues the session, all within a single request.
+在您的 Cursor 设置中找到 MCP 配置文件位置：
+- **Windows**: `%APPDATA%\Cursor\User\globalStorage\mcp.json`
+- **macOS**: `~/Library/Application Support/Cursor/User/globalStorage/mcp.json`
+- **Linux**: `~/.config/Cursor/User/globalStorage/mcp.json`
 
-Under the hood, it's just a clever use of tool calls to defer the completion of the request. Since tool calls don't count as separate premium interactions, you can loop through multiple feedback cycles without consuming additional requests.
+如果文件不存在，请创建它。
 
-Essentially, this helps your AI assistant _ask for clarification instead of guessing_, without wasting another request. That means fewer wrong answers, better performance, and less wasted API usage.
+### 3. 基础配置
 
-- **💰 Reduced Premium API Calls:** Avoid wasting expensive API calls generating code based on guesswork.
-- **✅ Fewer Errors:** Clarification _before_ action means less incorrect code and wasted time.
-- **⏱️ Faster Cycles:** Quick confirmations beat debugging wrong guesses.
-- **🎮 Better Collaboration:** Turns one-way instructions into a dialogue, keeping you in control.
-
-## 🛠️ Tools
-
-This server exposes the following tool via the Model Context Protocol (MCP):
-
-- `interactive_feedback`: Asks the user a question and returns their answer. Can display predefined options.
-
-## 📦 Installation & Configuration
-
-### 🚀 Quick Start with npx (Recommended)
-
-The easiest way to use this MCP server is with npx - no installation required!
-
-Add the following configuration to your MCP client:
-
-**Claude Desktop** (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
     "interactive-feedback": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "interactive-feedback-mcp-node"
+        "D:\\path\\to\\interactive-feedback-mcp-node\\src\\server.js"
       ],
+      "env": {
+        "NODE_ENV": "production",
+        "DEBUG": "false"
+      },
       "timeout": 600,
       "autoApprove": [
         "interactive_feedback"
@@ -55,15 +47,24 @@ Add the following configuration to your MCP client:
 }
 ```
 
-**Cursor** (`mcp.json`):
+**重要**: 将 `YOUR_PROJECT_PATH` 替换为您的实际项目路径。
+
+## 🔧 高级配置选项
+
+### 生产环境配置（推荐）
+
 ```json
 {
   "mcpServers": {
     "interactive-feedback": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "interactive-feedback-mcp-node"
+        "D:\\path\\to\\interactive-feedback-mcp-node\\src\\server.js"
       ],
+      "env": {
+        "NODE_ENV": "production",
+        "DEBUG": "false"
+      },
       "timeout": 600,
       "autoApprove": [
         "interactive_feedback"
@@ -73,146 +74,223 @@ Add the following configuration to your MCP client:
 }
 ```
 
-### 📦 Alternative: Global Installation
+### 调试模式配置
 
-1. **Install globally:**
-   ```bash
-   npm install -g interactive-feedback-mcp-node
-   ```
+如果遇到问题，可以启用调试模式：
 
-2. **Configure MCP client:**
-   ```json
-   {
-     "mcpServers": {
-       "interactive-feedback": {
-         "command": "interactive-feedback-mcp",
-         "args": [],
-         "timeout": 600,
-         "autoApprove": [
-           "interactive_feedback"
-         ]
-       }
-     }
-   }
-   ```
-
-### 🛠️ Development Setup
-
-1. **Prerequisites:**
-   - Node.js 18 or newer
-   - npm (Node.js package manager)
-
-2. **Get the code:**
-   ```bash
-   git clone https://github.com/your-username/interactive-feedback-mcp-node.git
-   cd interactive-feedback-mcp-node
-   npm install
-   ```
-
-3. **Configure with absolute path:**
-   ```json
-   {
-     "mcpServers": {
-       "interactive-feedback": {
-         "command": "node",
-         "args": [
-           "/absolute/path/to/interactive-feedback-mcp-node/src/server.js"
-         ],
-         "timeout": 600,
-         "autoApprove": [
-           "interactive_feedback"
-         ]
-       }
-     }
-   }
-   ```
-
-### 📍 Configuration File Locations
-
-**Claude Desktop:**
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
-
-**Cursor:**
-- Windows: `%APPDATA%\Cursor\User\globalStorage\mcp.json`
-- macOS: `~/Library/Application Support/Cursor/User/globalStorage/mcp.json`
-- Linux: `~/.config/Cursor/User/globalStorage/mcp.json`
-
-### 🧪 Testing Your Configuration
-
-Test if npx can run the server:
-```bash
-npx interactive-feedback-mcp-node
+```json
+{
+  "mcpServers": {
+    "interactive-feedback": {
+      "command": "node",
+      "args": [
+        "D:\\path\\to\\interactive-feedback-mcp-node\\src\\server.js"
+      ],
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "true"
+      },
+      "timeout": 600,
+      "autoApprove": [
+        "interactive_feedback"
+      ]
+    }
+  }
+}
 ```
 
-Test MCP protocol communication:
-```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | npx interactive-feedback-mcp-node
+## 🎨 用户体验优化
+
+### Cursor AI 规则配置
+
+在 Cursor 的设置中添加以下规则，让AI更好地使用反馈功能：
+
+**路径**: Settings > Rules > User Rules
+
+```
+当需求不明确或可能有多种理解方式时，使用 interactive_feedback 工具向用户询问具体需求，不要做假设。
+
+在实施重要更改之前，使用 interactive_feedback 工具确认用户意图。
+
+完成任务后，使用 interactive_feedback 工具询问用户是否满意，或是否需要调整。
+
+使用 interactive_feedback 时，提供清晰的问题描述和相关的预定义选项来帮助用户快速决策。
 ```
 
-### 🎯 AI Assistant Rules
+### 反馈窗口特性
 
-Add the following to your AI assistant's custom rules (Cursor Settings > Rules > User Rules):
+- 🎨 **现代化界面**: 专为 Cursor 工作流设计的深色主题
+- ⚡ **快捷键支持**: `Ctrl+Enter` 快速提交，`F1` 显示帮助
+- 📍 **智能定位**: 窗口自动出现在屏幕右侧，不遮挡 Cursor
+- 🔄 **实时验证**: 输入内容实时验证和提示
+- 💾 **防丢失保护**: 意外关闭时会提醒保存
 
-> If requirements or instructions are unclear use the tool interactive_feedback to ask clarifying questions to the user before proceeding, do not make assumptions. Whenever possible, present the user with predefined options through the interactive_feedback MCP tool to facilitate quick decisions.
+## 🛠️ 使用流程
 
-> Whenever you're about to complete a user request, call the interactive_feedback tool to request user feedback before ending the process. If the feedback is empty you can end the request and don't call the tool in loop.
+### 1. AI 触发反馈请求
 
-This ensures your AI assistant uses this MCP server to request user feedback when prompts are unclear and before completing tasks.
+当 AI 需要您的反馈时，会自动：
+- 弹出优化的反馈窗口
+- 显示具体问题和选项
+- 等待您的输入
 
-## 🚀 Usage
+### 2. 提供反馈
 
-### Running the Server
+您可以：
+- ✅ 选择预定义选项（如果有）
+- ✏️ 输入详细的文字反馈
+- ⭐ 两者结合使用
 
-To test the server directly:
+### 3. 快速提交
 
-```bash
-npm start
+- 使用 `Ctrl+Enter` 快速提交
+- 或点击"提交反馈"按钮
+- 窗口会自动关闭并返回结果给 Cursor
+
+### 4. AI 继续处理
+
+AI 会根据您的反馈：
+- 调整实施方案
+- 继续完成任务
+- 或询问进一步的澄清
+
+## 📝 最佳实践
+
+### 编写有效反馈
+
+**✅ 好的反馈：**
+```
+请将按钮颜色改为蓝色，并增加一个loading状态的动画效果。
+另外，错误提示信息需要更友好一些。
 ```
 
-### Testing the UI
-
-To test just the Electron UI:
-
-```bash
-npm run ui -- --prompt "Test message" --predefined-options "Option 1|||Option 2|||Option 3"
+**❌ 不够清晰的反馈：**
+```
+不对，改一下。
 ```
 
-### Manual Testing
+### 使用预定义选项
 
-You can manually test the MCP server by sending JSON-RPC messages:
+当 AI 提供选项时，优先选择最接近的选项，然后在文字区域补充细节。
+
+### 利用快捷键
+
+- `Ctrl+Enter`: 提交反馈
+- `F1`: 查看帮助
+- `Tab`: 在界面元素间切换
+
+## 🧪 测试和验证
+
+### 快速测试
 
 ```bash
+# 测试图形界面
+npm run test:electron
+
+# 完整诊断
+npm run diagnose
+```
+
+### 验证配置
+
+1. 重启 Cursor
+2. 在聊天中输入: "请使用 interactive_feedback 工具询问我想要什么颜色的按钮"
+3. 应该会弹出反馈窗口
+
+## 🚨 常见问题解决
+
+### 问题1: 反馈窗口不出现
+
+**解决方案:**
+1. 检查路径是否正确
+2. 确认 Node.js 已安装
+3. 尝试启用调试模式
+4. 查看 Cursor 的 MCP 日志
+
+### 问题2: 窗口闪退
+
+**解决方案:**
+1. 重新安装 Electron: `npm install electron --force`
+2. 检查系统权限
+3. 启用调试模式查看详细错误信息
+
+### 问题3: 中文显示异常
+
+**解决方案:**
+1. 确保系统区域设置正确
+2. 在配置中添加环境变量:
+```json
+"env": {
+  "LANG": "zh_CN.UTF-8",
+  "LC_ALL": "zh_CN.UTF-8"
+}
+```
+
+## 🔍 调试工具
+
+### 启用详细日志
+
+```json
+"env": {
+  "DEBUG": "true",
+  "NODE_ENV": "development"
+}
+```
+
+### 查看 MCP 日志
+
+在 Cursor 中：
+1. 打开开发者工具 (`Ctrl+Shift+I`)
+2. 查看 Console 标签页
+3. 搜索 "interactive-feedback" 相关日志
+
+### 手动测试
+
+```bash
+# 测试服务器
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | node src/server.js
+
+# 测试UI
+node test-ui.js --message "测试消息"
 ```
 
-## 🔧 Development
+## 📚 进阶配置
 
-### Project Structure
+### 自定义界面
 
-```
-src/
-├── server.js          # Main MCP server implementation
-├── index.js           # Electron main process
-├── feedback_ui.js     # Electron UI launcher
-public/
-├── feedback.html      # UI HTML
-└── feedback.js        # UI JavaScript
-```
+如需修改界面样式，可以编辑：
+- `public/feedback.html` - 界面结构和样式
+- `public/feedback.js` - 交互逻辑
 
-### Key Features
+### 集成其他工具
 
-- **MCP Protocol Compliance**: Implements the full MCP specification with proper JSON-RPC 2.0 messaging
-- **Electron UI**: Cross-platform desktop interface for user feedback
-- **Timeout Handling**: Prevents hanging processes with configurable timeouts
-- **Error Handling**: Comprehensive error reporting and logging
-- **Debug Support**: Detailed logging for troubleshooting
+可以将此 MCP 服务与其他开发工具集成：
+- Claude Desktop
+- VS Code (通过扩展)
+- 其他支持 MCP 的工具
 
-## 🙏 Acknowledgements
+## 🆘 获取帮助
 
-Developed by Fábio Ferreira ([@fabiomlferreira](https://x.com/fabiomlferreira)).
+### 文档资源
 
-Enhanced by Pau Oliva ([@pof](https://x.com/pof)) with ideas from Tommy Tong's [interactive-mcp](https://github.com/ttommyth/interactive-mcp).
+- [README.md](./README.md) - 基本介绍
+- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - 故障排除
+- [NPX-SETUP.md](./NPX-SETUP.md) - NPX 配置
 
-Node.js implementation based on the [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk).
+### 社区支持
+
+- [GitHub Issues](https://github.com/xiaojia21190/interactive-feedback-mcp-node/issues)
+- [MCP 官方文档](https://modelcontextprotocol.io/)
+
+### 提交问题
+
+提交问题时请包含：
+1. 操作系统和版本
+2. Cursor 版本
+3. 配置文件内容
+4. 错误日志
+5. 重现步骤
+
+---
+
+**🎉 享受更高效的 AI 协作体验！**

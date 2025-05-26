@@ -166,7 +166,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
    ```bash
    # 清除 npx 缓存
    npx --clear-cache
-   
+
    # 强制重新下载
    npx --force interactive-feedback-mcp-node
    ```
@@ -182,9 +182,9 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
    ```bash
    # 重新安装 Electron
    npm install electron --force
-   
-   # 或使用环境变量强制使用 Mock UI
-   FORCE_MOCK_UI=true npx interactive-feedback-mcp-node
+
+   # 检查系统是否满足 Electron 要求
+   npx electron --version
    ```
 
 ### 调试模式
