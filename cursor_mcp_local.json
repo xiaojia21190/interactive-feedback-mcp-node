@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "interactive-feedback": {
+      "command": "node",
+      "args": [
+        "d:\\interactive-feedback-mcp-node\\src\\server.js"
+      ],
+      "timeout": 600,
+      "autoApprove": [
+        "interactive_feedback"
+      ]
+    }
+  }
+}

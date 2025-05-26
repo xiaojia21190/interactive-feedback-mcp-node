@@ -1,0 +1,9 @@
+# Node.js-generated files
+node_modules/
+dist/
+
+# Logs
+*.log
+
+# Others
+.DS_Store

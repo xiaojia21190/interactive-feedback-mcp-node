@@ -1,0 +1,64 @@
+<!-- public/feedback.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Interactive Feedback MCP</title>
+    <style>
+      body {
+        background-color: #353535;
+        color: white;
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .group-box {
+        border: 1px solid #666;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+      .description {
+        margin-bottom: 10px;
+        white-space: pre-wrap;
+      }
+      .options {
+        margin: 10px 0;
+      }
+      .options input {
+        margin-right: 5px;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+        background-color: #2a2a2a;
+        color: white;
+        border: 1px solid #666;
+        padding: 5px;
+      }
+      button {
+        background-color: #4282da;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #3267a8;
+      }
+      .separator {
+        border-top: 1px solid #666;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="group-box">
+      <h3>Feedback</h3>
+      <div class="description" id="description"></div>
+      <div class="options" id="options"></div>
+      <div class="separator" id="separator" style="display: none"></div>
+      <textarea id="feedbackText" placeholder="Enter your feedback here (Ctrl+Enter to submit)"></textarea>
+      <button id="submitButton">Send Feedback</button>
+    </div>
+    <script src="feedback.js"></script>
+  </body>
+</html>
