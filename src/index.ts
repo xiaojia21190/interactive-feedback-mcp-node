@@ -1,12 +1,12 @@
-// src/index.js
-const { app, BrowserWindow } = require("electron");
-const path = require("path");
-const remoteMain = require("@electron/remote/main");
+import { app, BrowserWindow, screen, dialog } from "electron";
+import * as path from "path";
+import * as remoteMain from "@electron/remote/main";
+
 remoteMain.initialize();
 
-let mainWindow;
+let mainWindow: BrowserWindow | null;
 
-function createWindow(prompt, predefinedOptions, outputFile) {
+function createWindow(prompt: string, predefinedOptions: string[], outputFile: string): void {
   console.log("🚀 创建 Cursor 反馈窗口...");
   console.log("📋 参数:", { prompt, predefinedOptions, outputFile });
 
@@ -20,7 +20,6 @@ function createWindow(prompt, predefinedOptions, outputFile) {
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
-        enableRemoteModule: true,
       },
       alwaysOnTop: true,
       skipTaskbar: false,
@@ -34,7 +33,6 @@ function createWindow(prompt, predefinedOptions, outputFile) {
     });
 
     // 设置窗口位置到屏幕右侧，方便与 Cursor 并用
-    const { screen } = require("electron");
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
@@ -56,19 +54,21 @@ function createWindow(prompt, predefinedOptions, outputFile) {
     // Enable remote module for this window
     remoteMain.enable(mainWindow.webContents);
 
-    const htmlPath = path.join(__dirname, "..", "public", "feedback.html");
+    const htmlPath: string = path.join(__dirname, "..", "public", "feedback.html");
     console.log("📄 加载 HTML 文件:", htmlPath);
 
     mainWindow.loadFile(htmlPath);
 
     mainWindow.webContents.on("did-finish-load", () => {
       console.log("✅ HTML 加载完成，发送初始化数据");
-      mainWindow.webContents.send("init", { prompt, predefinedOptions, outputFile });
-      mainWindow.show(); // 加载完成后显示窗口
-      mainWindow.focus(); // 聚焦窗口
+      if (mainWindow) {
+        mainWindow.webContents.send("init", { prompt, predefinedOptions, outputFile });
+        mainWindow.show(); // 加载完成后显示窗口
+        mainWindow.focus(); // 聚焦窗口
+      }
     });
 
-    mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
+    mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
       console.error("❌ HTML 加载失败:", errorCode, errorDescription);
       process.exit(1);
     });
@@ -91,8 +91,7 @@ function createWindow(prompt, predefinedOptions, outputFile) {
     mainWindow.on("close", (event) => {
       if (process.env.NODE_ENV !== "development") {
         // 在生产模式下，确认用户是否真的要关闭
-        const { dialog } = require("electron");
-        const choice = dialog.showMessageBoxSync(mainWindow, {
+        const choice = dialog.showMessageBoxSync(mainWindow!, {
           type: "question",
           buttons: ["取消", "关闭"],
           defaultId: 0, // 默认选择"取消"，避免误操作
@@ -124,24 +123,24 @@ app.on("ready", () => {
   });
 
   try {
-    const args = process.argv.slice(2);
+    const args: string[] = process.argv.slice(2);
     console.log("📝 原始命令行参数:", args);
 
-    const params = {};
+    const params: Record<string, string> = {};
     for (let i = 0; i < args.length; i += 2) {
-      if (args[i] && args[i].startsWith("--")) {
-        params[args[i].replace("--", "")] = args[i + 1];
+      if (args[i] && args[i]!.startsWith("--")) {
+        params[args[i]!.replace("--", "")] = args[i + 1] || "";
       }
     }
 
     console.log("🔧 解析后的参数:", params);
 
     // 处理参数名称，支持带连字符的参数
-    const prompt = params.prompt || "Enter your feedback";
-    const predefinedOptions = params["predefined-options"] || "";
-    const outputFile = params["output-file"]; // 修复：使用正确的参数名
+    const prompt: string = params["prompt"] || "Enter your feedback";
+    const predefinedOptions: string = params["predefined-options"] || "";
+    const outputFile: string = params["output-file"] || ""; // 修复：使用正确的参数名
 
-    const options = predefinedOptions ? predefinedOptions.split("|||") : [];
+    const options: string[] = predefinedOptions ? predefinedOptions.split("|||") : [];
 
     console.log("📋 最终解析的参数:", { prompt, predefinedOptions, outputFile, options });
 
@@ -167,12 +166,12 @@ app.on("before-quit", () => {
 });
 
 // 处理应用级错误
-process.on("uncaughtException", (error) => {
+process.on("uncaughtException", (error: Error) => {
   console.error("💥 未捕获的异常:", error);
   process.exit(1);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason: any, _promise: Promise<any>) => {
   console.error("💥 未处理的 Promise 拒绝:", reason);
   process.exit(1);
 });

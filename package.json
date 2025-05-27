@@ -1,14 +1,35 @@
 {
   "name": "interactive-feedback-mcp-node",
   "version": "0.1.0",
-  "description": "MCP server for interactive user feedback in AI-assisted development, by Fábio Ferreira and Pau Oliva.",
-  "main": "src/server.js",
+  "type": "module",
+  "description": "MCP server for interactive user feedback in AI-assisted development, by xiaojia21190.",
+  "main": "dist/server.js",
   "bin": {
-    "interactive-feedback-mcp": "src/server.js"
+    "interactive-feedback-mcp": "dist/server.js"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "ui": "electron src/index.js"
+    "build": "tsc",
+    "build:frontend": "tsc --project tsconfig.frontend.json",
+    "build:all": "npm run build && npm run build:frontend",
+    "dev": "tsc --watch",
+    "dev:frontend": "tsc --project tsconfig.frontend.json --watch",
+    "type-check": "tsc --noEmit",
+    "type-check:frontend": "tsc --project tsconfig.frontend.json --noEmit",
+    "start": "node dist/server.js",
+    "start:legacy": "node src/server.js",
+    "ui": "electron src/index.ts",
+    "ui-feedback": "electron src/feedback_ui.ts",
+    "ui-feedback-debug": "electron src/feedback_ui_debug.ts",
+    "test-ui": "electron src/feedback_ui.ts --prompt \"测试消息\" --output-file \"test-output.json\"",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e",
+    "test:mcp": "vitest run tests/integration/mcp-server.test.ts"
   },
   "keywords": [
     "mcp",
@@ -18,7 +39,8 @@
     "interactive",
     "electron",
     "cursor",
-    "claude"
+    "claude",
+    "typescript"
   ],
   "repository": {
     "type": "git",
@@ -29,15 +51,27 @@
   },
   "files": [
     "src/",
+    "dist/",
     "public/",
     "README.md",
     "LICENSE"
   ],
   "dependencies": {
     "@electron/remote": "^2.1.2",
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "electron": "^35.1.5",
     "electron-builder": "^25.1.8",
-    "electron-vite": "^3.1.0"
+    "electron-vite": "^3.1.0",
+    "zod": "^3.25.30"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/ui": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8",
+    "vitest": "^2.1.8",
+    "msw": "^2.6.6",
+    "happy-dom": "^15.11.6",
+    "typescript": "^5.4.0"
   },
   "author": "xiaojia21190",
   "license": "MIT"

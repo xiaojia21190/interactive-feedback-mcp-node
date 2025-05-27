@@ -4,6 +4,7 @@
       "command": "node",
       "args": ["d:\\interactive-feedback-mcp-node\\src\\server.js"],
       "env": {
+        "PROJECT_ROOT": "d:\\interactive-feedback-mcp-node",
         "NODE_ENV": "production",
         "DEBUG": "false"
       },
